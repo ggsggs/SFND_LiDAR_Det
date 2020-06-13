@@ -40,12 +40,25 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr,
 ProcessPointClouds<PointT>::SeparateClouds(
     pcl::PointIndices::Ptr inliers,
     typename pcl::PointCloud<PointT>::Ptr cloud) {
-  // TODO: Create two new point clouds, one cloud with obstacles and other with
+  // DONE: Create two new point clouds, one cloud with obstacles and other with
   // segmented plane
+  typename pcl::PointCloud<PointT>::Ptr planeCloud{new pcl::PointCloud<PointT>};
+  typename pcl::PointCloud<PointT>::Ptr obsCloud{new pcl::PointCloud<PointT>};
 
+
+  for (auto idx : inliers->indices)
+    planeCloud->points.push_back(cloud->points[idx]);
+  
+  pcl::ExtractIndices<PointT> extract;
+
+  extract.setInputCloud(cloud);
+  extract.setIndices(inliers);
+  extract.setNegative(true);
+  extract.filter(*obsCloud);
+ 
   std::pair<typename pcl::PointCloud<PointT>::Ptr,
             typename pcl::PointCloud<PointT>::Ptr>
-      segResult(cloud, cloud);
+      segResult(obsCloud, planeCloud);
   return segResult;
 }
 
@@ -57,9 +70,25 @@ ProcessPointClouds<PointT>::SegmentPlane(
     float distanceThreshold) {
   // Time segmentation process
   auto startTime = std::chrono::steady_clock::now();
-  pcl::PointIndices::Ptr inliers;
-  // TODO:: Fill in this function to find inliers for the cloud.
+  // DONE:: Fill in this function to find inliers for the cloud.
+  pcl::ModelCoefficients::Ptr coefficients{new pcl::ModelCoefficients()};
+  pcl::PointIndices::Ptr inliers{new pcl::PointIndices()};
+  // Create the segmentation object
+  pcl::SACSegmentation<pcl::PointXYZ> seg;
+  // Optional
+  seg.setOptimizeCoefficients(true);
+  // Mandatory
+  seg.setModelType(pcl::SACMODEL_PLANE);
+  seg.setMethodType(pcl::SAC_RANSAC);
+  seg.setMaxIterations(maxIterations);
+  seg.setDistanceThreshold(distanceThreshold);
 
+  seg.setInputCloud(cloud);
+  seg.segment(*inliers, *coefficients);
+
+  if (inliers->indices.size() == 0) {
+    std::cout << "Could not estimate plane for current CP";
+  }
   auto endTime = std::chrono::steady_clock::now();
   auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
       endTime - startTime);
