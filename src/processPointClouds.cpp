@@ -45,17 +45,16 @@ ProcessPointClouds<PointT>::SeparateClouds(
   typename pcl::PointCloud<PointT>::Ptr planeCloud{new pcl::PointCloud<PointT>};
   typename pcl::PointCloud<PointT>::Ptr obsCloud{new pcl::PointCloud<PointT>};
 
-
   for (auto idx : inliers->indices)
     planeCloud->points.push_back(cloud->points[idx]);
-  
+
   pcl::ExtractIndices<PointT> extract;
 
   extract.setInputCloud(cloud);
   extract.setIndices(inliers);
   extract.setNegative(true);
   extract.filter(*obsCloud);
- 
+
   std::pair<typename pcl::PointCloud<PointT>::Ptr,
             typename pcl::PointCloud<PointT>::Ptr>
       segResult(obsCloud, planeCloud);
@@ -89,15 +88,35 @@ ProcessPointClouds<PointT>::SegmentPlane(
   if (inliers->indices.size() == 0) {
     std::cout << "Could not estimate plane for current CP";
   }
+  // commented code below is my implementation of RANSAC
+  // auto inliers = Ransac(cloud, maxIterations, distanceThreshold);
+
   auto endTime = std::chrono::steady_clock::now();
   auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
       endTime - startTime);
   std::cout << "plane segmentation took " << elapsedTime.count()
             << " milliseconds" << std::endl;
 
+  // commented code below is my implementation of RANSAC
+  // typename pcl::PointCloud<PointT>::Ptr cloudInliers(
+  //     new pcl::PointCloud<PointT>());
+  // typename pcl::PointCloud<PointT>::Ptr cloudOutliers(
+  //     new pcl::PointCloud<PointT>());
+
+  // for (int index = 0; index < cloud->points.size(); index++) {
+  //   PointT point = cloud->points[index];
+  //   if (inliers.count(index))
+  //     cloudInliers->points.push_back(point);
+  //   else
+  //     cloudOutliers->points.push_back(point);
+  // }
   std::pair<typename pcl::PointCloud<PointT>::Ptr,
             typename pcl::PointCloud<PointT>::Ptr>
       segResult = SeparateClouds(inliers, cloud);
+  // commented code below is my implementation of RANSAC
+  // std::pair<typename pcl::PointCloud<PointT>::Ptr,
+  //   typename pcl::PointCloud<PointT>::Ptr> segResult{cloudInliers,
+  //   cloudOutliers};
   return segResult;
 }
 
@@ -180,4 +199,59 @@ ProcessPointClouds<PointT>::streamPcd(std::string dataPath) {
   sort(paths.begin(), paths.end());
 
   return paths;
+}
+
+// helper fun
+template <typename PointT>
+std::unordered_set<int>
+ProcessPointClouds<PointT>::Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+                                   int maxIterations, float distanceTol) {
+  std::unordered_set<int> inliersResult;
+  srand(time(NULL));
+
+  // TODO: Fill in this function
+
+  // For max iterations
+  for (int i = 0; i < maxIterations; i++) {
+    std::unordered_set<int> inliers;
+    // Randomly sample subset and fit line
+    int idx1 = rand() % cloud->points.size();
+    int idx2 = rand() % cloud->points.size();
+    int idx3 = rand() % cloud->points.size();
+    while (idx2 == idx1) {
+      idx2 = rand() % cloud->points.size();
+    }
+    while (idx3 == idx1 || idx3 == idx2) {
+      idx3 = rand() % cloud->points.size();
+    }
+    pcl::PointXYZ p1 = cloud->points[idx1];
+    pcl::PointXYZ p2 = cloud->points[idx2];
+    pcl::PointXYZ p3 = cloud->points[idx3];
+
+    Eigen::Vector3d v1{p2.x - p1.x, p2.y - p1.y, p2.z - p1.z};
+    Eigen::Vector3d v2{p3.x - p1.x, p3.y - p1.y, p3.z - p1.z};
+
+    auto normalV = v1.cross(v2);
+    float D = -(v1.dot(normalV));
+
+    float denominator = normalV.norm();
+
+    for (int idx = 0; idx < cloud->points.size(); idx++) {
+      auto p = cloud->points[idx];
+      Eigen::Vector3d v{p.x, p.y, p.z};
+      // Measure distance between every point and fitted line
+      float d = fabs(v.dot(normalV) + D) / denominator;
+      // If distance is smaller than threshold count it as inlier
+      // std::cout << d << std::endl;
+      if (d <= distanceTol) {
+        inliers.insert(idx);
+      }
+    }
+
+    if (inliers.size() > inliersResult.size()) {
+      inliersResult = inliers;
+    }
+  }
+  // Return indicies of inliers from fitted line with most inliers
+  return inliersResult;
 }
