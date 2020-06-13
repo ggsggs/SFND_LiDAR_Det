@@ -74,8 +74,7 @@ std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
     while (idx2 == idx1) {
       idx2 = rand() % cloud->points.size();
     }
-    while (idx3 == idx1 || idx3 == idx2)
-    {
+    while (idx3 == idx1 || idx3 == idx2) {
       idx3 = rand() % cloud->points.size();
     }
     pcl::PointXYZ p1 = cloud->points[idx1];
@@ -110,7 +109,7 @@ std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
   return inliersResult;
 }
 
-int main(int argc, const char* argv[]){
+int main(int argc, const char *argv[]) {
 
   // Create viewer
   pcl::visualization::PCLVisualizer::Ptr viewer = initScene();
@@ -120,7 +119,8 @@ int main(int argc, const char* argv[]){
 
   // TODO: Change the max iteration and distance tolerance arguments for Ransac
   // function
-  std::unordered_set<int> inliers = Ransac(cloud, std::atoi(argv[1]), std::atof(argv[2]));
+  std::unordered_set<int> inliers =
+      Ransac(cloud, std::atoi(argv[1]), std::atof(argv[2]));
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloudInliers(
       new pcl::PointCloud<pcl::PointXYZ>());
