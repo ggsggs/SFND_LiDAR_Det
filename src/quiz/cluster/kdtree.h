@@ -24,20 +24,20 @@ struct KdTree {
     // the function should create a new node and place correctly with in the
     // root
     Node **currN = &root;
-    bool compY = false;
 
+    uint counter == 0;
     while (1) {
+      int idx = counter % point.size();
       if (*currN == nullptr) {
         *currN = new Node(point, id);
         break;
-      } else if (point[static_cast<int>(compY)] <
-                 (*currN)->point[static_cast<int>(compY)]) {
+      } else if (point[idx] <
+                 (*currN)->point[idx])
         currN = &(*currN)->left;
-        compY = !compY;
-      } else {
+      else
         currN = &(*currN)->right;
-        compY = !compY;
-      }
+
+      counter++;
     }
   }
 
