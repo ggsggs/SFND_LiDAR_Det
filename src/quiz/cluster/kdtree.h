@@ -30,8 +30,8 @@ struct KdTree {
       if (*currN == nullptr) {
         *currN = new Node(point, id);
         break;
-      } else if ((*currN)->point[static_cast<int>(compY)] <
-                 point[static_cast<int>(compY)]) {
+      } else if (point[static_cast<int>(compY)] <
+                 (*currN)->point[static_cast<int>(compY)]) {
         currN = &(*currN)->left;
         compY = !compY;
       } else {
