@@ -28,8 +28,22 @@ struct KdTree
 	void insert(std::vector<float> point, int id)
 	{
 		// TODO: Fill in this function to insert a new point into the tree
-		// the function should create a new node and place correctly with in the root 
-
+		// the function should create a new node and place correctly with in the root
+		Node** currN = &root;
+		bool compY = false;
+		
+		while (1) {
+			if (*currN == nullptr) {
+				*currN = new Node(point, id);
+				break;
+			}else if ((*currN)->point[static_cast<int>(compY)] <= point[static_cast<int>(compY)]){
+				currN = &(*currN)->left;
+				compY = !compY;
+			}else {
+				currN = &(*currN)->right;
+				compY = !compY;
+			}
+		}
 	}
 
 	// return a list of point ids in the tree that are within distance of target
