@@ -31,8 +31,7 @@ struct KdTree {
       if (*currN == nullptr) {
         *currN = new Node(point, id);
         break;
-      } else if (point[idx] <=
-                 ((*currN)->point[idx]))
+      } else if (point[idx] <= ((*currN)->point[idx]))
         currN = &((*currN)->left);
       else
         currN = &((*currN)->right);
@@ -61,7 +60,7 @@ struct KdTree {
     return isIn;
   }
 
-  void searchSubTrees(const std::vector<float>& target, float distanceTol,
+  void searchSubTrees(const std::vector<float> &target, float distanceTol,
                       std::vector<int> &ids, uint depth, const Node *n) {
     int idx = depth % target.size();
     if (n == nullptr)
@@ -78,7 +77,7 @@ struct KdTree {
   }
 
   // return a list of point ids in the tree that are within distance of target
-  std::vector<int> search(const std::vector<float>& target, float distanceTol) {
+  std::vector<int> search(const std::vector<float> &target, float distanceTol) {
     std::vector<int> ids;
     searchSubTrees(target, distanceTol, ids, 0, root);
     return ids;
