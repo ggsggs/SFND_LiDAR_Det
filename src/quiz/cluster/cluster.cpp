@@ -6,6 +6,7 @@
 #include <chrono>
 #include <string>
 #include "kdtree.h"
+#include <algorithm>
 
 // Arguments:
 // window is the region to draw box around
@@ -75,13 +76,42 @@ void render2DTree(Node* node, pcl::visualization::PCLVisualizer::Ptr& viewer, Bo
 
 }
 
+void proximityFun(KdTree *tree, float distanceTol, 
+				  std::vector<bool>& isNodeVisited,
+				  const std::vector<std::vector<float>>& points,
+				  std::vector<int>& cluster,
+				  int index) {
+	isNodeVisited[index] = true;
+	cluster.push_back(index);
+
+	std::vector<int> near = tree->search(points[index], distanceTol);
+
+	for (int idx : near) {
+		if (!isNodeVisited[idx])
+			proximityFun(tree, distanceTol, isNodeVisited, points, cluster,
+						 idx);
+	}
+}
 std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol)
 {
-
 	// TODO: Fill out this function to return list of indices for each cluster
-
 	std::vector<std::vector<int>> clusters;
- 
+	std::vector<bool> isNodeVisited(points.size(), false);
+
+	int idx = 0;
+	while (idx < points.size()) {
+		if (isNodeVisited[idx]) {
+			idx++;
+			continue;
+		}
+
+		std::vector<int> cluster;
+
+		proximityFun(tree, distanceTol, isNodeVisited, points, cluster, idx);
+		clusters.push_back(cluster);
+		idx++;
+	}
+	
 	return clusters;
 
 }
@@ -104,6 +134,7 @@ int main ()
 	//std::vector<std::vector<float>> points = { {-6.2,7}, {-6.3,8.4}, {-5.2,7.1}, {-5.7,6.3} };
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData(points);
 
+	//std::random_shuffle(points.begin(), points.end());
 	KdTree* tree = new KdTree;
   
     for (int i=0; i<points.size(); i++) 
@@ -121,7 +152,7 @@ int main ()
   	// Time segmentation process
   	auto startTime = std::chrono::steady_clock::now();
   	//
-  	std::vector<std::vector<int>> clusters = euclideanCluster(points, tree, 3.0);
+  	std::vector<std::vector<int>> clusters = euclideanCluster(points, tree, 5.0);
   	//
   	auto endTime = std::chrono::steady_clock::now();
   	auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
