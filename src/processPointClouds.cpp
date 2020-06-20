@@ -104,7 +104,7 @@ ProcessPointClouds<PointT>::SegmentPlane(
   pcl::ModelCoefficients::Ptr coefficients{new pcl::ModelCoefficients()};
   pcl::PointIndices::Ptr inliers{new pcl::PointIndices()};
   // Create the segmentation object
-  pcl::SACSegmentation<pcl::PointXYZ> seg;
+  pcl::SACSegmentation<PointT> seg;
   // Optional
   seg.setOptimizeCoefficients(true);
   // Mandatory
