@@ -63,12 +63,14 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr &viewer) {
   renderPointCloud(viewer, filterCloud, "filterCloud", Color(0.1, 0.1, 0.1));
   int clusterId = 0;
   for (auto cluster : cloudClusters) {
+
+    auto color = colors[clusterId % colors.size()];
     std::cout << "cluster size ";
     pointProcessorI->numPoints(cluster);
     renderPointCloud(viewer, cluster, "obstCloud" + std::to_string(clusterId),
-                     colors[clusterId % colors.size()]);
-    // Box box = pointProcessor.BoundingBox(cluster);
-    // renderBox(viewer, box, clusterId);
+                     color);
+    Box box = pointProcessorI->BoundingBox(cluster);
+    renderBox(viewer, box, clusterId, color, 0.3);
     ++clusterId;
   }
   // renderPointCloud(viewer, pairClouds.first, "obstCloud", Color(1, 0, 0));
