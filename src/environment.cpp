@@ -43,22 +43,25 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr &viewer) {
   pcl::PointCloud<pcl::PointXYZI>::Ptr inputCloud =
       pointProcessorI->loadPcd("../src/sensors/data/pcd/data_1/0000000000.pcd");
 
-  Eigen::Vector4f minPoint{-30, -30, -3, 1};
-  Eigen::Vector4f maxPoint{30, 30, 2, 1};
-  float resolution = 0.2;
+  const Eigen::Vector4f minPoint{-40, -7, -3, 1};
+  const Eigen::Vector4f maxPoint{40, 7, 1, 1};
+  const float resolution = 0.2;
 
   auto filterCloud =
       pointProcessorI->FilterCloud(inputCloud, resolution, minPoint, maxPoint);
 
-  auto pairClouds = pointProcessorI->SegmentPlane(filterCloud, 100, 0.2);
+  auto pairClouds = pointProcessorI->SegmentPlane(filterCloud, 1000, 0.3);
   std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> cloudClusters =
-      pointProcessorI->Clustering(pairClouds.first, 1, 3, 1000);
+      pointProcessorI->Clustering(pairClouds.first, 0.5, 3, 1000);
 
   std::vector<Color> colors;
   for (float r = 0; r <= 1; r += 0.5)
     for (float g = 0; g <= 1; g += 0.5)
-      for (float b = 0; b <= 1; b += 0.5)
+      for (float b = 0; b <= 1; b += 0.5) {
+        if (r == g && r == b && r == 0)
+          continue;
         colors.push_back(Color(r, g, b));
+      }
 
   renderPointCloud(viewer, filterCloud, "filterCloud", Color(0.1, 0.1, 0.1));
   int clusterId = 0;
