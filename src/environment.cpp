@@ -49,9 +49,12 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr &viewer) {
 
   auto filterCloud = pointProcessorI->FilterCloud(inputCloud, resolution,
       minPoint, maxPoint);
-  
+
+  auto pairClouds = pointProcessorI->SegmentPlane(filterCloud, 100, 0.2);
+  renderPointCloud(viewer, pairClouds.first, "obstCloud", Color(1, 0, 0));
+  renderPointCloud(viewer, pairClouds.second, "planeCloud", Color(0, 1, 0));
   renderPointCloud(viewer, inputCloud, "inputCloud", Color{0.2, 0.2, 0.2});
-  renderPointCloud(viewer, filterCloud, "filterCloud");
+  // renderPointCloud(viewer, filterCloud, "filterCloud");
 }
 
 void simpleHighway(pcl::visualization::PCLVisualizer::Ptr &viewer) {
