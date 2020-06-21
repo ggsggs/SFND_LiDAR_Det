@@ -3,7 +3,7 @@
 
 #include "../../render/box.h"
 #include "../../render/render.h"
-#include "kdtree.h"
+#include "../../kdtree.h"
 #include <algorithm>
 #include <chrono>
 #include <string>
