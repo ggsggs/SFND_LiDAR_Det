@@ -1,38 +1,42 @@
-// Quiz on implementing kd tree 
-#ifndef KDTREE_H
-#define KDTREE_H
+/* \author Aaron Brown */
+// Quiz on implementing kd tree
+
 #include "../../render/render.h"
-#include <memory>
 
 // Structure to represent node of kd tree
 struct Node {
   std::vector<float> point;
   int id;
-  std::unique_ptr<Node> left;
-  std::unique_ptr<Node> right;
+  Node *left;
+  Node *right;
 
   Node(std::vector<float> arr, int setId)
-      : point(arr), id(setId), left(nullptr), right(nullptr) {}
+      : point(arr), id(setId), left(NULL), right(NULL) {}
 };
 
 struct KdTree {
-  std::unique_ptr<Node> root;
+  Node *root;
 
-  KdTree() : root(nullptr) {}
+  KdTree() : root(NULL) {}
 
   void insert(std::vector<float> point, int id) {
-    // DONE: Fill in this function to insert a new point into the tree
+    // TODO: Fill in this function to insert a new point into the tree
     // the function should create a new node and place correctly with in the
     // root
-   insertRecursive(root, point, id, 0); 
-  } 
+    Node **currN = &root;
 
-  void insertRecursive(std::unique_ptr<Node>& node, const std::vector<float>& point, const int id, const uint depth) {
-    uint idx = depth % point.size();
-    if (node == nullptr) node = std::unique_ptr<Node>(new Node{point, id});
-    else {
-      insertRecursive(point[idx] <= node->point[idx]? node->left : node->right,
-                      point, id, depth+1);
+    uint counter = 0;
+    while (1) {
+      int idx = counter % point.size();
+      if (*currN == nullptr) {
+        *currN = new Node(point, id);
+        break;
+      } else if (point[idx] <= ((*currN)->point[idx]))
+        currN = &((*currN)->left);
+      else
+        currN = &((*currN)->right);
+
+      counter++;
     }
   }
 
@@ -64,20 +68,18 @@ struct KdTree {
     bool isIn = isPointIn(target, n->point, distanceTol);
     if (isIn) {
       ids.push_back(n->id);
-      searchSubTrees(target, distanceTol, ids, depth + 1, n->left.get());
-      searchSubTrees(target, distanceTol, ids, depth + 1, n->right.get());
+      searchSubTrees(target, distanceTol, ids, depth + 1, n->left);
+      searchSubTrees(target, distanceTol, ids, depth + 1, n->right);
     } else {
       searchSubTrees(target, distanceTol, ids, depth + 1,
-                     target[idx] <= n->point[idx] ? n->left.get() : n->right.get());
+                     target[idx] <= n->point[idx] ? n->left : n->right);
     }
   }
 
   // return a list of point ids in the tree that are within distance of target
   std::vector<int> search(const std::vector<float> &target, float distanceTol) {
     std::vector<int> ids;
-    searchSubTrees(target, distanceTol, ids, 0, root.get());
+    searchSubTrees(target, distanceTol, ids, 0, root);
     return ids;
   }
 };
-
-#endif

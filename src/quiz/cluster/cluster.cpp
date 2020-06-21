@@ -67,8 +67,8 @@ void render2DTree(Node *node, pcl::visualization::PCLVisualizer::Ptr &viewer,
     }
     iteration++;
 
-    render2DTree(node->left, viewer, lowerWindow, iteration, depth + 1);
-    render2DTree(node->right, viewer, upperWindow, iteration, depth + 1);
+    render2DTree(node->left.get(), viewer, lowerWindow, iteration, depth + 1);
+    render2DTree(node->right.get(), viewer, upperWindow, iteration, depth + 1);
   }
 }
 
@@ -138,7 +138,7 @@ int main() {
     tree->insert(points[i], i);
 
   int it = 0;
-  render2DTree(tree->root, viewer, window, it);
+  render2DTree(tree->root.get(), viewer, window, it);
 
   std::cout << "Test Search" << std::endl;
   std::vector<int> nearby = tree->search({-6, 7}, 3.0);
