@@ -35,14 +35,23 @@ public:
 
   std::pair<typename pcl::PointCloud<PointT>::Ptr,
             typename pcl::PointCloud<PointT>::Ptr>
-  SeparateClouds(pcl::PointIndices::Ptr inliers,
+  SeparateClouds_PCL(pcl::PointIndices::Ptr inliers,
                  typename pcl::PointCloud<PointT>::Ptr cloud);
+
+  std::pair<typename pcl::PointCloud<PointT>::Ptr,
+            typename pcl::PointCloud<PointT>::Ptr>
+  SegmentPlane_PCL(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations,
+               float distanceThreshold);
 
   std::pair<typename pcl::PointCloud<PointT>::Ptr,
             typename pcl::PointCloud<PointT>::Ptr>
   SegmentPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations,
                float distanceThreshold);
 
+  std::vector<typename pcl::PointCloud<PointT>::Ptr>
+  Clustering_PCL(typename pcl::PointCloud<PointT>::Ptr cloud,
+             float clusterTolerance, int minSize, int maxSize);
+  
   std::vector<typename pcl::PointCloud<PointT>::Ptr>
   Clustering(typename pcl::PointCloud<PointT>::Ptr cloud,
              float clusterTolerance, int minSize, int maxSize);
@@ -55,7 +64,7 @@ public:
 
   std::vector<boost::filesystem::path> streamPcd(std::string dataPath);
 
-  std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+  std::unordered_set<int> Ransac(typename pcl::PointCloud<PointT>::Ptr cloud,
                                  int maxIterations, float distanceTol);
 };
 #endif /* PROCESSPOINTCLOUDS_H_ */
