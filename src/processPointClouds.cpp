@@ -1,9 +1,11 @@
 // PCL lib Functions for processing point clouds
 
-#include <random>
-#include <iterator>
-#include <experimental/algorithm>
+#include "kdtree.h"
 #include "processPointClouds.h"
+#include <iterator>
+#include <random>
+#include <algorithm>
+#include <memory>
 
 // constructor:
 template <typename PointT> ProcessPointClouds<PointT>::ProcessPointClouds() {}
@@ -141,23 +143,23 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr,
 ProcessPointClouds<PointT>::SegmentPlane(
     typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations,
     float distanceThreshold) {
-    std::unordered_set<int> inliers =
+  std::unordered_set<int> inliers =
       Ransac(cloud, maxIterations, distanceThreshold);
 
-    typename pcl::PointCloud<PointT>::Ptr cloudInliers(
-        new pcl::PointCloud<PointT>());
-    typename pcl::PointCloud<PointT>::Ptr cloudOutliers(
-        new pcl::PointCloud<PointT>());
+  typename pcl::PointCloud<PointT>::Ptr cloudInliers(
+      new pcl::PointCloud<PointT>());
+  typename pcl::PointCloud<PointT>::Ptr cloudOutliers(
+      new pcl::PointCloud<PointT>());
 
-    for (int index = 0; index < cloud->points.size(); index++) {
-      auto& point = cloud->points[index];
-      if (inliers.count(index))
-        cloudInliers->points.push_back(point);
-      else
-        cloudOutliers->points.push_back(point);
-    } 
+  for (int index = 0; index < cloud->points.size(); index++) {
+    auto &point = cloud->points[index];
+    if (inliers.count(index))
+      cloudInliers->points.push_back(point);
+    else
+      cloudOutliers->points.push_back(point);
+  }
 
-    return {cloudOutliers, cloudInliers};
+  return {cloudOutliers, cloudInliers};
 }
 
 template <typename PointT>
@@ -207,6 +209,39 @@ ProcessPointClouds<PointT>::Clustering_PCL(
   std::cout << "clustering took " << elapsedTime.count()
             << " milliseconds and found " << clusters.size() << " clusters"
             << std::endl;
+
+  return clusters;
+}
+
+template <typename PointT>
+std::vector<typename pcl::PointCloud<PointT>::Ptr>
+ProcessPointClouds<PointT>::Clustering(
+    typename pcl::PointCloud<PointT>::Ptr cloud, float clusterTolerance,
+    int minSize, int maxSize) {
+  std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;
+  std::unique_ptr<KdTree> tree(new KdTree());
+  std::vector<std::vector<float>> points;
+  for (int i = 0; i < cloud->points.size(); i++) {
+    auto p = cloud->points[i];
+    std::vector<float> p_XYZ{p.x, p.y, p.z};
+    tree->insert(p_XYZ, i);
+    points.push_back(p_XYZ);
+  }
+  auto clusters_ind = euclideanCluster(points, tree.get(), clusterTolerance);
+
+  for (const auto &cluster : clusters_ind) {
+    if (cluster.size() < minSize || cluster.size() > maxSize) continue;
+    typename pcl::PointCloud<PointT>::Ptr cloud_cluster{
+        new pcl::PointCloud<PointT>};
+    for (auto &idx : cluster) {
+      cloud_cluster->points.push_back(cloud->points[idx]);
+    }
+    cloud_cluster->width = cloud_cluster->points.size();
+    cloud_cluster->height = 1;
+    cloud_cluster->is_dense = 1;
+
+    clusters.push_back(cloud_cluster);
+  }
 
   return clusters;
 }
@@ -279,8 +314,8 @@ ProcessPointClouds<PointT>::Ransac(typename pcl::PointCloud<PointT>::Ptr cloud,
   // random config
   const size_t min = 1;
   const size_t max = cloud->points.size();
-  std::random_device rd;  
-  std::mt19937 gen(rd()); 
+  std::random_device rd;
+  std::mt19937 gen(rd());
 
   // vector of indices {0, 1, ..., size -1}
   std::vector<int> indices(cloud->points.size() - 1);
@@ -296,19 +331,24 @@ ProcessPointClouds<PointT>::Ransac(typename pcl::PointCloud<PointT>::Ptr cloud,
 
     // use first 3 points in shuffled vector to create the plane.
     std::vector<Eigen::Vector3d> planePoints;
-    for (size_t i = 0; i < 3; i++){
+    for (size_t i = 0; i < 3; i++) {
       auto p = cloud->points[indices[i]];
       planePoints.push_back({p.x, p.y, p.z});
-    } 
-    // direction vectors that define plane, normal vector to it, distnce to origin.
-    Eigen::Vector3d v1 = planePoints.at(1) - planePoints.at(0);//{p2.x - p1.x, p2.y - p1.y, p2.z - p1.z};
-    Eigen::Vector3d v2 = planePoints.at(2) - planePoints.at(0);//{p3.x - p1.x, p3.y - p1.y, p3.z - p1.z};
+    }
+    // direction vectors that define plane, normal vector to it, distnce to
+    // origin.
+    Eigen::Vector3d v1 =
+        planePoints.at(1) -
+        planePoints.at(0); //{p2.x - p1.x, p2.y - p1.y, p2.z - p1.z};
+    Eigen::Vector3d v2 =
+        planePoints.at(2) -
+        planePoints.at(0); //{p3.x - p1.x, p3.y - p1.y, p3.z - p1.z};
     auto normalV = v1.cross(v2);
     float D = -(planePoints.at(0).dot(normalV));
     float denominator = normalV.norm();
 
-    uint count = 0;   // count of number of points that fit the plane.
-    uint maxIters = indices.size()*30/100+1;
+    uint count = 0; // count of number of points that fit the plane.
+    uint maxIters = indices.size() * 30 / 100 + 1;
     for (int idx : indices) {
       auto p = cloud->points[idx];
       Eigen::Vector3d v{p.x, p.y, p.z};
@@ -316,8 +356,10 @@ ProcessPointClouds<PointT>::Ransac(typename pcl::PointCloud<PointT>::Ptr cloud,
       float d = fabs(v.dot(normalV) + D) / denominator;
       // If distance is smaller than threshold count it as inlier
       maxIters--;
-      if (d <= distanceTol) count++;
-      if (maxIters == 0 || maxIters + count < best_count) break;
+      if (d <= distanceTol)
+        count++;
+      if (maxIters == 0 || maxIters + count < best_count)
+        break;
     }
 
     if (count > best_count) { // update best values if candidate is superior.
@@ -344,4 +386,45 @@ ProcessPointClouds<PointT>::Ransac(typename pcl::PointCloud<PointT>::Ptr cloud,
   std::cout << "plane segmentation took " << elapsedTime.count()
             << " milliseconds" << std::endl;
   return inliersResult;
+}
+
+template <typename PointT>
+void ProcessPointClouds<PointT>::proximityFun(
+    KdTree *tree, float distanceTol, std::vector<bool> &isNodeVisited,
+    const std::vector<std::vector<float>> &points, std::vector<int> &cluster,
+    int index) {
+  isNodeVisited[index] = true;
+  cluster.push_back(index);
+
+  std::vector<int> near = tree->search(points[index], distanceTol);
+
+  for (int idx : near) {
+    if (!isNodeVisited[idx])
+      proximityFun(tree, distanceTol, isNodeVisited, points, cluster, idx);
+  }
+}
+
+template <typename PointT>
+std::vector<std::vector<int>> ProcessPointClouds<PointT>::euclideanCluster(
+    const std::vector<std::vector<float>> &points, KdTree *tree,
+    float distanceTol) {
+  // DONE: Fill out this function to return list of indices for each cluster
+  std::vector<std::vector<int>> clusters;
+  std::vector<bool> isNodeVisited(points.size(), false);
+
+  int idx = 0;
+  while (idx < points.size()) {
+    if (isNodeVisited[idx]) {
+      idx++;
+      continue;
+    }
+
+    std::vector<int> cluster;
+
+    proximityFun(tree, distanceTol, isNodeVisited, points, cluster, idx);
+    clusters.push_back(cluster);
+    idx++;
+  }
+
+  return clusters;
 }

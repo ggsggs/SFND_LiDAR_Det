@@ -19,6 +19,7 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include "kdtree.h"
 
 template <typename PointT> class ProcessPointClouds {
 public:
@@ -36,12 +37,12 @@ public:
   std::pair<typename pcl::PointCloud<PointT>::Ptr,
             typename pcl::PointCloud<PointT>::Ptr>
   SeparateClouds_PCL(pcl::PointIndices::Ptr inliers,
-                 typename pcl::PointCloud<PointT>::Ptr cloud);
+                     typename pcl::PointCloud<PointT>::Ptr cloud);
 
   std::pair<typename pcl::PointCloud<PointT>::Ptr,
             typename pcl::PointCloud<PointT>::Ptr>
-  SegmentPlane_PCL(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations,
-               float distanceThreshold);
+  SegmentPlane_PCL(typename pcl::PointCloud<PointT>::Ptr cloud,
+                   int maxIterations, float distanceThreshold);
 
   std::pair<typename pcl::PointCloud<PointT>::Ptr,
             typename pcl::PointCloud<PointT>::Ptr>
@@ -50,8 +51,8 @@ public:
 
   std::vector<typename pcl::PointCloud<PointT>::Ptr>
   Clustering_PCL(typename pcl::PointCloud<PointT>::Ptr cloud,
-             float clusterTolerance, int minSize, int maxSize);
-  
+                 float clusterTolerance, int minSize, int maxSize);
+
   std::vector<typename pcl::PointCloud<PointT>::Ptr>
   Clustering(typename pcl::PointCloud<PointT>::Ptr cloud,
              float clusterTolerance, int minSize, int maxSize);
@@ -66,5 +67,14 @@ public:
 
   std::unordered_set<int> Ransac(typename pcl::PointCloud<PointT>::Ptr cloud,
                                  int maxIterations, float distanceTol);
+  
+  void proximityFun(KdTree *tree, float distanceTol,
+                    std::vector<bool> &isNodeVisited,
+                    const std::vector<std::vector<float>> &points,
+                    std::vector<int> &cluster, int index);
+
+  std::vector<std::vector<int>>
+  euclideanCluster(const std::vector<std::vector<float>> &points, KdTree *tree,
+                   float distanceTol);
 };
 #endif /* PROCESSPOINTCLOUDS_H_ */
