@@ -1,4 +1,5 @@
 build/
+debug/
 tags
 *.swp
 .vscode/
