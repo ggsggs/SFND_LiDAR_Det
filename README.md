@@ -1,3 +1,4 @@
+Completed this project as part of the Sensor Fusion Udacity nanodegree, below is the exact README of the original repo.
 # Sensor Fusion Self-Driving Car Course
 
 <img src="media/ObstacleDetectionFPS.gif" width="700" height="400" />
